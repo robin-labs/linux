@@ -105,7 +105,11 @@ static int xenvif_poll(struct napi_struct *napi, int budget)
 
 	if (work_done < budget) {
 		napi_complete(napi);
-		xenvif_napi_schedule_or_enable_events(queue);
+		/* If the queue is rate-limited, it shall be
+		 * rescheduled in the timer callback.
+		 */
+		if (likely(!queue->rate_limited))
+			xenvif_napi_schedule_or_enable_events(queue);
 	}
 
 	return work_done;
@@ -221,10 +225,10 @@ static struct net_device_stats *xenvif_get_stats(struct net_device *dev)
 {
 	struct xenvif *vif = netdev_priv(dev);
 	struct xenvif_queue *queue = NULL;
-	unsigned long rx_bytes = 0;
-	unsigned long rx_packets = 0;
-	unsigned long tx_bytes = 0;
-	unsigned long tx_packets = 0;
+	u64 rx_bytes = 0;
+	u64 rx_packets = 0;
+	u64 tx_bytes = 0;
+	u64 tx_packets = 0;
 	unsigned int index;
 
 	spin_lock(&vif->lock);

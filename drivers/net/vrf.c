@@ -787,14 +787,9 @@ static int vrf_del_slave(struct net_device *dev, struct net_device *port_dev)
 static void vrf_dev_uninit(struct net_device *dev)
 {
 	struct net_vrf *vrf = netdev_priv(dev);
-	struct net_device *port_dev;
-	struct list_head *iter;
 
 	vrf_rtable_release(dev, vrf);
 	vrf_rt6_release(dev, vrf);
-
-	netdev_for_each_lower_dev(dev, port_dev, iter)
-		vrf_del_slave(dev, port_dev);
 
 	free_percpu(dev->dstats);
 	dev->dstats = NULL;
@@ -1134,7 +1129,7 @@ static int vrf_fib_rule(const struct net_device *dev, __u8 family, bool add_it)
 	frh->family = family;
 	frh->action = FR_ACT_TO_TBL;
 
-	if (nla_put_u32(skb, FRA_L3MDEV, 1))
+	if (nla_put_u8(skb, FRA_L3MDEV, 1))
 		goto nla_put_failure;
 
 	if (nla_put_u32(skb, FRA_PRIORITY, FIB_RULE_PREF))
@@ -1232,6 +1227,12 @@ static int vrf_validate(struct nlattr *tb[], struct nlattr *data[])
 
 static void vrf_dellink(struct net_device *dev, struct list_head *head)
 {
+	struct net_device *port_dev;
+	struct list_head *iter;
+
+	netdev_for_each_lower_dev(dev, port_dev, iter)
+		vrf_del_slave(dev, port_dev);
+
 	unregister_netdevice_queue(dev, head);
 }
 

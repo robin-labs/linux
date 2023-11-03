@@ -21,7 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-/** DOC: Interrupt management for the V3D engine.
+/**
+ * DOC: Interrupt management for the V3D engine
  *
  * We have an interrupt status register (V3D_INTCTL) which reports
  * interrupts, and where writing 1 bits clears those interrupts.
@@ -219,6 +220,9 @@ vc4_irq_uninstall(struct drm_device *dev)
 
 	/* Clear any pending interrupts we might have left. */
 	V3D_WRITE(V3D_INTCTL, V3D_DRIVER_IRQS);
+
+	/* Finish any interrupt handler still in flight. */
+	disable_irq(dev->irq);
 
 	cancel_work_sync(&vc4->overflow_mem_work);
 }
